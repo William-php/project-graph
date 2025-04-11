@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gerador de Tabela de Jogos</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+            color: #333;
+        }
+        
+        h1 {
+            color: #2c3e50;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        
+        .container {
+            background-color: white;
+            padding: 25px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        .input-section {
+            margin-bottom: 20px;
+        }
+        
+        textarea {
+            width: 100%;
+            height: 100px;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            resize: vertical;
+        }
+        
+        button {
+            background-color: #3498db;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background-color 0.3s;
+        }
+        
+        button:hover {
+            background-color: #2980b9;
+        }
+        
+        .results {
+            margin-top: 30px;
+            display: none;
+        }
+        
+        .round {
+            margin-bottom: 20px;
+            padding: 15px;
+            background-color: #f8f9fa;
+            border-radius: 5px;
+        }
+        
+        .round h3 {
+            margin-top: 0;
+            color: #2c3e50;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 5px;
+        }
+        
+        .match {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px dotted #ddd;
+        }
+        
+        .match:last-child {
+            border-bottom: none;
+        }
+        
+        .team {
+            padding: 0 10px;
+        }
+        
+        .vs {
+            font-weight: bold;
+            color: #e74c3c;
+        }
+        
+        .instructions {
+            background-color: #fffde7;
+            padding: 15px;
+            border-left: 4px solid #ffd600;
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Gerador de Tabela de Jogos</h1>
+        
+        <div class="instructions">
+            <p>Digite os nomes dos times, um por linha. O sistema irá gerar um cronograma onde cada time joga contra todos os outros exatamente uma vez.</p>
+        </div>
+        
+        <div class="input-section">
+            <h2>Times Participantes</h2>
+            <textarea id="teamsInput" placeholder="Digite os nomes dos times, um por linha. Exemplo:
+Time A
+Time B
+Time C
+Time D"></textarea>
+        </div>
+        
+        <button id="generateBtn">Gerar Tabela de Jogos</button>
+        
+        <div id="results" class="results">
+            <h2>Cronograma de Partidas</h2>
+            <div id="schedule"></div>
+        </div>
+    </div>
+
+    <script>
+        document.getElementById('generateBtn').addEventListener('click', generateSchedule);
+        
+        function generateSchedule() {
+            // Obter os times do textarea
+            const teamsInput = document.getElementById('teamsInput').value;
+            const teams = teamsInput.split('\n').filter(team => team.trim() !== '');
+            
+            if (teams.length < 2) {
+                alert('Por favor, insira pelo menos 2 times.');
+                return;
+            }
+            
+            // Gerar o cronograma
+            const schedule = roundRobinSchedule(teams);
+            
+            // Exibir os resultados
+            displaySchedule(schedule);
+            
+            // Mostrar a seção de resultados
+            document.getElementById('results').style.display = 'block';
+        }
+        
+        function roundRobinSchedule(teams) {
+            const schedule = [];
+            let rotatedTeams = [...teams];
+            
+            // Se número ímpar de times, adiciona um BYE
+            if (rotatedTeams.length % 2 !== 0) {
+                rotatedTeams.push('BYE');
+            }
+            
+            const numRounds = rotatedTeams.length - 1;
+            const matchesPerRound = rotatedTeams.length / 2;
+            
+            for (let round = 0; round < numRounds; round++) {
+                const roundMatches = [];
+                
+                for (let i = 0; i < matchesPerRound; i++) {
+                    const home = i;
+                    const away = rotatedTeams.length - 1 - i;
+                    
+                    // Não incluir partidas com BYE se possível
+                    if (rotatedTeams[home] !== 'BYE' && rotatedTeams[away] !== 'BYE') {
+                        roundMatches.push({
+                            home: rotatedTeams[home],
+                            away: rotatedTeams[away]
+                        });
+                    }
+                }
+                
+                schedule.push(roundMatches);
+                
+                // Rotacionar os times (exceto o primeiro)
+                const lastTeam = rotatedTeams.pop();
+                rotatedTeams.splice(1, 0, lastTeam);
+            }
+            
+            return schedule;
+        }
+        
+        function displaySchedule(schedule) {
+            const scheduleContainer = document.getElementById('schedule');
+            scheduleContainer.innerHTML = '';
+            
+            schedule.forEach((round, index) => {
+                const roundElement = document.createElement('div');
+                roundElement.className = 'round';
+                
+                const roundTitle = document.createElement('h3');
+                roundTitle.textContent = `Rodada ${index + 1}`;
+                roundElement.appendChild(roundTitle);
+                
+                round.forEach(match => {
+                    const matchElement = document.createElement('div');
+                    matchElement.className = 'match';
+                    
+                    const homeTeam = document.createElement('span');
+                    homeTeam.className = 'team home';
+                    homeTeam.textContent = match.home;
+                    
+                    const vs = document.createElement('span');
+                    vs.className = 'vs';
+                    vs.textContent = 'vs';
+                    
+                    const awayTeam = document.createElement('span');
+                    awayTeam.className = 'team away';
+                    awayTeam.textContent = match.away;
+                    
+                    matchElement.appendChild(homeTeam);
+                    matchElement.appendChild(vs);
+                    matchElement.appendChild(awayTeam);
+                    
+                    roundElement.appendChild(matchElement);
+                });
+                
+                scheduleContainer.appendChild(roundElement);
+            });
+        }
+    </script>
+</body>
+</html>
